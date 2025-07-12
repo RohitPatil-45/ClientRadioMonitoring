@@ -145,7 +145,7 @@ public class NodeStatusLatencyMonitoring implements Runnable {
 
             xmlcon = Datasource.getConnection();
 
-            String SQL = "select noiselevel,powersupplyvoltage,rssi,internalTemperature,txPowerMeasurement from threshold_parameter";
+            String SQL = "select noiselevel_max,powersupplyvoltage_max,rssi_max,internalTemperature_max,txPowerMeasurement_max from threshold_parameter_client_radio";
             Statement customerRS = xmlcon.createStatement();
             ResultSet xmlrs = customerRS.executeQuery(SQL);
             while (xmlrs.next()) {

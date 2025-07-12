@@ -304,13 +304,14 @@ public class DatabaseHelper {
         }
     }
 
-    public void insertIntoEventLog(String deviceID, String deviceName, String eventMsg, int severity, String serviceName, Timestamp evenTimestamp, String netadmin_msg, String isAffected, String problem) {
+    public void insertIntoEventLog(String deviceID, String deviceName, String eventMsg, int severity, String serviceName, Timestamp evenTimestamp, String netadmin_msg, String isAffected, String problem, String serviceId, String deviceType) {
         PreparedStatement preparedStatement1 = null;
+        PreparedStatement preparedStatement2 = null;
         Connection connection = null;
         try {
             connection = Datasource.getConnection();
             preparedStatement1 = connection.prepareStatement("INSERT INTO event_log (device_id, device_name, service_name, event_msg, netadmin_msg, severity,"
-                    + " event_timestamp, acknowledgement_status, isAffected, Problem_Clear) VALUES (?,?,?,?,?,?,?,?,?,?)");
+                    + " event_timestamp, acknowledgement_status, isAffected, Problem_Clear, Service_ID, Device_Type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
             preparedStatement1.setString(1, deviceID);
             preparedStatement1.setString(2, deviceName);
             preparedStatement1.setString(3, serviceName);
@@ -321,6 +322,8 @@ public class DatabaseHelper {
             preparedStatement1.setBoolean(8, false);
             preparedStatement1.setString(9, isAffected);
             preparedStatement1.setString(10, problem);
+            preparedStatement1.setString(11, serviceId);
+             preparedStatement1.setString(12, deviceType);
 
             preparedStatement1.executeUpdate();
 
@@ -330,6 +333,56 @@ public class DatabaseHelper {
             try {
                 if (preparedStatement1 != null) {
                     preparedStatement1.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (Exception exp) {
+                System.out.println("excep:" + exp);
+            }
+        }
+
+        try {
+            if ("Cleared".equalsIgnoreCase(problem)) {
+
+                String updateQuery = "UPDATE event_log\n"
+                        + "SET\n"
+                        + "    Cleared_event_timestamp = ?,\n"
+                        // + "    netadmin_msg = ?,\n"
+                        + "netadmin_msg = CONCAT(netadmin_msg, ' => ', ?),\n"
+                        + "    isAffected = ?\n"
+                        + "WHERE\n"
+                        + "    ID = (\n"
+                        + "        SELECT id_alias.ID\n"
+                        + "        FROM (\n"
+                        + "            SELECT ID\n"
+                        + "            FROM event_log\n"
+                        + "            WHERE service_id = ?\n"
+                        + "              AND device_id = ?\n"
+                        + "            AND isaffected = '1' ORDER BY ID DESC\n"
+                        + "            LIMIT 1\n"
+                        + "        ) AS id_alias\n"
+                        + "    )\n"
+                        + ";";
+
+                connection = Datasource.getConnection();
+
+                preparedStatement2 = connection.prepareStatement(updateQuery);
+                preparedStatement2.setTimestamp(1, evenTimestamp);
+
+                preparedStatement2.setString(2, netadmin_msg); // To Do
+                preparedStatement2.setString(3, "0");
+                preparedStatement2.setString(4, serviceId);
+                preparedStatement2.setString(5, deviceID);
+
+                preparedStatement2.executeUpdate();
+            }
+        } catch (Exception e) {
+            System.out.println("Exception in update mr = " + e);
+        } finally {
+            try {
+                if (preparedStatement2 != null) {
+                    preparedStatement2.close();
                 }
                 if (connection != null) {
                     connection.close();

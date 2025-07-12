@@ -27,6 +27,8 @@ public class ClientRadioPHPMon implements Runnable {
 
     ClientRadioModel radio = null;
     DatabaseHelper db = new DatabaseHelper();
+    boolean simulation = true;
+    String deviceType = "CLIENT_RADIO";
 
     ClientRadioPHPMon(ClientRadioModel m) {
         this.radio = m;
@@ -35,7 +37,6 @@ public class ClientRadioPHPMon implements Runnable {
     @Override
     public void run() {
 
-        boolean simulation = true;
         while (true) {
 
             String cient_radio_id = radio.getHvnamn2();
@@ -44,6 +45,7 @@ public class ClientRadioPHPMon implements Runnable {
             String hvid = radio.getHvid();
             String isAffected = "0";
             String problem = "problem";
+            String serviceId = "";
 
             StringBuilder outputBuilder = new StringBuilder();
             ProcessBuilder builder = null;
@@ -168,9 +170,10 @@ public class ClientRadioPHPMon implements Runnable {
 
                             //TO DO: insert into event Log
                             eventMsg1 = "Client radio : " + deviceName + " is Down";
-                            netadminMsg = "Client radio : " + deviceName + " - Got no reply";
+                            netadminMsg = netadminMsg = deviceName + " is Down";;
                             isAffected = "1";
-                            db.insertIntoEventLog(deviceID, deviceName, eventMsg1, 4, "PING_ICMP", event_time, netadminMsg, isAffected, problem);
+                            serviceId = "client_radio_status";
+                            db.insertIntoEventLog(deviceID, deviceName, eventMsg1, 4, "ClientRadio Status", event_time, netadminMsg, isAffected, problem, serviceId, deviceType);
 
                         } else if (router_status_xml.equalsIgnoreCase("Down3") && router_status.equalsIgnoreCase("Down")) {
                             //    //System.out.println("%%%%%..Skip Down condition ");
@@ -181,10 +184,11 @@ public class ClientRadioPHPMon implements Runnable {
                             updateHvServiceMode(device_ip, 0);
                             deviceStatusLog(device_ip, deviceName, "Up", event_time);
                             eventMsg1 = "Client radio : " + deviceName + " is Up";
-                            netadminMsg = "Client radio : " + deviceName + "pl - 0";
+                            netadminMsg = deviceName + " is Up";
                             isAffected = "0";
                             problem = "Cleared";
-                            db.insertIntoEventLog(deviceID, deviceName, eventMsg1, 0, "PING_ICMP", event_time, netadminMsg, isAffected, problem);
+                            serviceId = "client_radio_status";
+                            db.insertIntoEventLog(deviceID, deviceName, eventMsg1, 0, "ClientRadio Status", event_time, netadminMsg, isAffected, problem, serviceId, deviceType);
                             try {
                                 StatusChangeDiff t22 = null;
                                 t22 = new StatusChangeDiff();
@@ -212,10 +216,11 @@ public class ClientRadioPHPMon implements Runnable {
                             updateHvServiceMode(device_ip, 0);
                             deviceStatusLog(device_ip, deviceName, "Up", event_time);
                             eventMsg1 = "Client radio : " + deviceName + " is up";
-                            netadminMsg = "Client radio : " + deviceName + "pl - 0";
+                            netadminMsg = netadminMsg = deviceName + " is Up";;
                             isAffected = "0";
                             problem = "Cleared";
-                            db.insertIntoEventLog(deviceID, deviceName, eventMsg1, 0, "PING_ICMP", event_time, netadminMsg, isAffected, problem);
+                            serviceId = "client_radio_status";
+                            db.insertIntoEventLog(deviceID, deviceName, eventMsg1, 0, "ClientRadio Status", event_time, netadminMsg, isAffected, problem, serviceId, deviceType);
 
                             try {
                                 StatusChangeDiff t22 = null;
@@ -262,33 +267,40 @@ public class ClientRadioPHPMon implements Runnable {
         int threshold = NodeStatusLatencyMonitoring.temperatureThresholdParam;
         String isAffected = "0";
         String problem = "problem";
-
+        String serviceId = "internaltemperature";
+        String eventMsg = null;
+        String netadmin_msg = null;
         try {
             String h_latencystatus = NodeStatusLatencyMonitoring.temperatureThresholdMap.get(deviceID).toString();
 
             if (actual_value > threshold && h_latencystatus.equalsIgnoreCase("Low")) {
                 System.out.println("Internal Temperature:High" + actual_value + " Internal Temperature value=" + threshold + " Internal Temperature status=" + "High" + " ip=" + deviceID);
-                String eventMsg = "Internal Temperature Threshold:High" + actual_value + " latency threshold value=" + threshold + " Internal Temprature status=" + "High" + " Device Name=" + deviceName;
-                String netadmin_msg = "Satel Combined online diagnostics polling: internaltemperature = " + actual_value;
+                eventMsg = "Internal Temperature Threshold:High" + actual_value + " Internal Temperature value=" + threshold + " Internal Temprature status=" + "High" + " Device Name=" + deviceName;
+                netadmin_msg = "Satel Combined online diagnostics polling: internaltemperature = " + actual_value;
                 NodeStatusLatencyMonitoring.temperatureThresholdMap.put(deviceID, "High");
                 DatabaseHelper db = new DatabaseHelper();
                 db.temperatureThresholdLog(deviceID, deviceName, threshold, actual_value, "High", logDateTime); // Threshold Log and
                 isAffected = "1";
                 problem = "problem";
 
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "internaltemperature", logDateTime, netadmin_msg, isAffected, problem); //Evrnt log
+                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "internaltemperature", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
                 db.updateMonitoringInstanceStatus(hvid, "internaltemperature", 5);
 //                db.updateMarsThresholdStatus(deviceID, "High");// Update Thrshold Status = need understanding
 
             } else if (actual_value < threshold && h_latencystatus.equalsIgnoreCase("High")) {
-                System.out.println("Latency Threshold:Low" + actual_value + " latency threshold value=" + threshold + " latency status=" + "Low" + " ip=" + deviceName);
+
                 NodeStatusLatencyMonitoring.temperatureThresholdMap.put(deviceID, "Low");
                 DatabaseHelper db = new DatabaseHelper();
                 db.temperatureThresholdLog(deviceID, deviceName, threshold, actual_value, "Low", logDateTime);
                 db.updateMonitoringInstanceStatus(hvid, "internaltemperature", 0);
+                eventMsg = "Internal Temperature Threshold:Low" + actual_value + " Internal Temperature value=" + threshold + " Internal Temprature status=" + "Low" + " Device Name=" + deviceName;
+                netadmin_msg = "Satel Combined online diagnostics polling: internaltemperature = " + actual_value;
+                isAffected = "0";
+                problem = "Cleared";
+                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "internaltemperature", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
             }
         } catch (Exception e4) {
-            System.out.println(" latency threshold exception:" + e4);
+            System.out.println(" Internal Temperature Threshold:" + e4);
         }
     }
 
@@ -297,32 +309,41 @@ public class ClientRadioPHPMon implements Runnable {
         int threshold = NodeStatusLatencyMonitoring.noiseThresholdParam;
         String isAffected = "0";
         String problem = "problem";
-
+        String serviceId = "noiselevel";
+        String eventMsg = null;
+        String netadmin_msg = null;
         try {
             String h_latencystatus = NodeStatusLatencyMonitoring.noiseThresholdMap.get(deviceID).toString();
 
             if (actual_value > threshold && h_latencystatus.equalsIgnoreCase("Low")) {
                 System.out.println("Noise Level:High" + actual_value + " Noise level threshold value=" + threshold + " Noise level status=" + "High" + " ip=" + deviceID);
-                String eventMsg = "Noise Level Threshold:High" + actual_value + " Noise level threshold value=" + threshold + " Noise level status=" + "High" + " Device Name=" + deviceName;
-                String netadmin_msg = "Satel Combined online diagnostics polling: internaltemperature = " + actual_value;
+                eventMsg = "Noise Level Threshold:High" + actual_value + " Noise level threshold value=" + threshold + " Noise level status=" + "High" + " Device Name=" + deviceName;
+                netadmin_msg = "Satel Combined online diagnostics polling: internaltemperature = " + actual_value;
                 NodeStatusLatencyMonitoring.noiseThresholdMap.put(deviceID, "High");
                 DatabaseHelper db = new DatabaseHelper();
                 db.noiseLevelThresholdLog(deviceID, deviceName, threshold, actual_value, "High", logDateTime); // Threshold Log and
                 db.updateMonitoringInstanceStatus(hvid, "noiselevel", 5);
                 isAffected = "1";
                 problem = "problem";
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "noiselevel", logDateTime, netadmin_msg, isAffected, problem); //Evrnt log
+
+                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "noiselevel", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
 //                db.updateMarsThresholdStatus(deviceID, "High");// Update Thrshold Status
 
             } else if (actual_value < threshold && h_latencystatus.equalsIgnoreCase("High")) {
-                System.out.println("Latency Threshold:Low" + actual_value + " latency threshold value=" + threshold + " latency status=" + "Low" + " ip=" + deviceName);
+
                 NodeStatusLatencyMonitoring.noiseThresholdMap.put(deviceID, "Low");
                 DatabaseHelper db = new DatabaseHelper();
                 db.noiseLevelThresholdLog(deviceID, deviceName, threshold, actual_value, "Low", logDateTime);
                 db.updateMonitoringInstanceStatus(hvid, "noiselevel", 0);
+                eventMsg = "Noise Level Threshold:Low" + actual_value + " Noise level threshold value=" + threshold + " Noise level status=" + "Low" + " Device Name=" + deviceName;
+                netadmin_msg = "Satel Combined online diagnostics polling: internaltemperature = " + actual_value;
+                isAffected = "0";
+                problem = "Cleared";
+
+                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "noiselevel", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType);
             }
         } catch (Exception e4) {
-            System.out.println(" latency threshold exception:" + e4);
+            System.out.println(" Noise Level Threshold:" + e4);
         }
     }
 
@@ -331,31 +352,41 @@ public class ClientRadioPHPMon implements Runnable {
         int threshold = NodeStatusLatencyMonitoring.powerSupplyThresholdParam;
         String isAffected = "0";
         String problem = "problem";
+        String serviceId = "powersupplyvoltage";
+        String eventMsg = null;
+        String netadmin_msg = null;
         try {
             String h_latencystatus = NodeStatusLatencyMonitoring.powerSupplyThresholdMap.get(deviceID).toString();
 
             if (actual_value > threshold && h_latencystatus.equalsIgnoreCase("Low")) {
                 System.out.println("Power Supply :High" + actual_value + " Power Supply threshold value=" + threshold + " Power Supply status=" + "High" + " ip=" + deviceID);
-                String eventMsg = "Power Supply Threshold:High" + actual_value + " Power Supply threshold value=" + threshold + " Power Supply status=" + "High" + " Device Name=" + deviceName;
-                String netadmin_msg = "Satel Combined online diagnostics polling: powersupplyvoltage = " + actual_value;
+                eventMsg = "Power Supply Threshold:High" + actual_value + " Power Supply threshold value=" + threshold + " Power Supply status=" + "High" + " Device Name=" + deviceName;
+                netadmin_msg = "Satel Combined online diagnostics polling: powersupplyvoltage = " + actual_value;
                 NodeStatusLatencyMonitoring.powerSupplyThresholdMap.put(deviceID, "High");
                 DatabaseHelper db = new DatabaseHelper();
                 db.powerSupplyThresholdLog(deviceID, deviceName, threshold, actual_value, "High", logDateTime); // Threshold Log and
                 db.updateMonitoringInstanceStatus(hvid, "powersupplyvoltage", 5);
                 isAffected = "1";
                 problem = "problem";
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "powersupplyvoltage", logDateTime, netadmin_msg, isAffected, problem); //Evrnt log
+
+                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "powersupplyvoltage", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
 //                db.updateMarsThresholdStatus(deviceID, "High");// Update Thrshold Status
 
             } else if (actual_value < threshold && h_latencystatus.equalsIgnoreCase("High")) {
-                System.out.println("Latency Threshold:Low" + actual_value + " latency threshold value=" + threshold + " latency status=" + "Low" + " ip=" + deviceName);
+
                 NodeStatusLatencyMonitoring.powerSupplyThresholdMap.put(deviceID, "Low");
                 DatabaseHelper db = new DatabaseHelper();
                 db.powerSupplyThresholdLog(deviceID, deviceName, threshold, actual_value, "Low", logDateTime);
                 db.updateMonitoringInstanceStatus(hvid, "powersupplyvoltage", 0);
+                eventMsg = "Power Supply Threshold:Low" + actual_value + " Power Supply threshold value=" + threshold + " Power Supply status=" + "Low" + " Device Name=" + deviceName;
+                netadmin_msg = "Satel Combined online diagnostics polling: powersupplyvoltage = " + actual_value;
+                isAffected = "0";
+                problem = "Cleared";
+
+                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "powersupplyvoltage", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType);
             }
         } catch (Exception e4) {
-            System.out.println(" latency threshold exception:" + e4);
+            System.out.println(" Power Supply Threshold:" + e4);
         }
     }
 
@@ -364,13 +395,16 @@ public class ClientRadioPHPMon implements Runnable {
         int threshold = NodeStatusLatencyMonitoring.rssiThresholdParam;
         String isAffected = "0";
         String problem = "problem";
+        String serviceId = "rssi";
+        String eventMsg = null;
+        String netadmin_msg = null;
         try {
             String h_latencystatus = NodeStatusLatencyMonitoring.rssiThresholdMap.get(deviceID).toString();
 
             if (actual_value > threshold && h_latencystatus.equalsIgnoreCase("Low")) {
                 System.out.println("rssi :High" + actual_value + " rssi threshold value=" + threshold + " rssi status=" + "High" + " ip=" + deviceID);
-                String eventMsg = "rssi Threshold:High" + actual_value + " rssi threshold value=" + threshold + " rssi status=" + "High" + " Device Name=" + deviceName;
-                String netadmin_msg = "Satel Combined online diagnostics polling: rssi = " + actual_value;
+                eventMsg = "rssi Threshold:High" + actual_value + " rssi threshold value=" + threshold + " rssi status=" + "High" + " Device Name=" + deviceName;
+                netadmin_msg = "Satel Combined online diagnostics polling: rssi = " + actual_value;
                 NodeStatusLatencyMonitoring.rssiThresholdMap.put(deviceID, "High");
                 DatabaseHelper db = new DatabaseHelper();
                 db.rssiThresholdLog(deviceID, deviceName, threshold, actual_value, "High", logDateTime); // Threshold Log and
@@ -378,18 +412,25 @@ public class ClientRadioPHPMon implements Runnable {
 
                 isAffected = "1";
                 problem = "problem";
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "rssi", logDateTime, netadmin_msg, isAffected, problem); //Evrnt log
+
+                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "rssi", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
 //                db.updateMarsThresholdStatus(deviceID, "High");// Update Thrshold Status
 
             } else if (actual_value < threshold && h_latencystatus.equalsIgnoreCase("High")) {
-                System.out.println("Latency Threshold:Low" + actual_value + " latency threshold value=" + threshold + " latency status=" + "Low" + " ip=" + deviceName);
+
                 NodeStatusLatencyMonitoring.rssiThresholdMap.put(deviceID, "Low");
                 DatabaseHelper db = new DatabaseHelper();
                 db.rssiThresholdLog(deviceID, deviceName, threshold, actual_value, "Low", logDateTime);
                 db.updateMonitoringInstanceStatus(hvid, "rssi", 0);
+                eventMsg = "rssi Threshold:Low" + actual_value + " rssi threshold value=" + threshold + " rssi status=" + "Low" + " Device Name=" + deviceName;
+                netadmin_msg = "Satel Combined online diagnostics polling: rssi = " + actual_value;
+                isAffected = "0";
+                problem = "Cleared";
+                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "rssi", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+
             }
         } catch (Exception e4) {
-            System.out.println(" latency threshold exception:" + e4);
+            System.out.println(" rssi Threshold:" + e4);
         }
     }
 
@@ -398,31 +439,41 @@ public class ClientRadioPHPMon implements Runnable {
         int threshold = NodeStatusLatencyMonitoring.txPowerThresholdParam;
         String isAffected = "0";
         String problem = "problem";
+        String serviceId = "txpower";
+        String eventMsg = null;
+        String netadmin_msg = null;
         try {
             String h_latencystatus = NodeStatusLatencyMonitoring.txPowerThresholdMap.get(deviceID).toString();
 
             if (actual_value > threshold && h_latencystatus.equalsIgnoreCase("Low")) {
                 System.out.println("Tx Power :High" + actual_value + " Tx Power value=" + threshold + " Tx Power status=" + "High" + " ip=" + deviceID);
-                String eventMsg = "Tx Power Threshold:High" + actual_value + " Tx Power threshold value=" + threshold + " Tx Power status=" + "High" + " Device Name=" + deviceName;
-                String netadmin_msg = "Satel Combined online diagnostics polling: txpower = " + actual_value;
+                eventMsg = "Tx Power Threshold:High" + actual_value + " Tx Power threshold value=" + threshold + " Tx Power status=" + "High" + " Device Name=" + deviceName;
+                netadmin_msg = "Satel Combined online diagnostics polling: txpower = " + actual_value;
                 NodeStatusLatencyMonitoring.txPowerThresholdMap.put(deviceID, "High");
                 DatabaseHelper db = new DatabaseHelper();
                 db.txPowerThresholdLog(deviceID, deviceName, threshold, actual_value, "High", logDateTime); // Threshold Log and
                 db.updateMonitoringInstanceStatus(hvid, "txpower", 5);
                 isAffected = "1";
                 problem = "problem";
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "txpower", logDateTime, netadmin_msg, isAffected, problem); //Evrnt log
+
+                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "txpower", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
 //                db.updateMarsThresholdStatus(deviceID, "High");// Update Thrshold Status
 
             } else if (actual_value < threshold && h_latencystatus.equalsIgnoreCase("High")) {
-                System.out.println("Latency Threshold:Low" + actual_value + " latency threshold value=" + threshold + " latency status=" + "Low" + " ip=" + deviceName);
+
                 NodeStatusLatencyMonitoring.txPowerThresholdMap.put(deviceID, "Low");
                 DatabaseHelper db = new DatabaseHelper();
                 db.txPowerThresholdLog(deviceID, deviceName, threshold, actual_value, "Low", logDateTime);
                 db.updateMonitoringInstanceStatus(hvid, "txpower", 0);
+
+                isAffected = "0";
+                problem = "Cleared";
+                eventMsg = "Tx Power Threshold:Low" + actual_value + " Tx Power threshold value=" + threshold + " Tx Power status=" + "Low" + " Device Name=" + deviceName;
+                netadmin_msg = "Satel Combined online diagnostics polling: txpower = " + actual_value;
+                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "txpower", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
             }
         } catch (Exception e4) {
-            System.out.println(" latency threshold exception:" + e4);
+            System.out.println(" Tx Power Threshold:" + e4);
         }
     }
 
