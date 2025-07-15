@@ -443,13 +443,16 @@ public class DatabaseHelper {
         PreparedStatement pstmtThresholdUpdate = null;
         try {
             threshold_update_con = Datasource.getConnection();
-            pstmtThresholdUpdate = threshold_update_con.prepareStatement("UPDATE mars_radio_health_monitoring SET Internal_temperature_status=?,internalTemperature=?,eventTimestamp=? WHERE clientRadioId=? "
+            pstmtThresholdUpdate = threshold_update_con.prepareStatement("UPDATE mars_radio_health_monitoring SET Internal_temperature_status=?,internalTemperature=?,"
+                    + "eventTimestamp=?,Internal_temperature_Generated_Time=?,Internal_temperature_Cleared_Time=? WHERE clientRadioId=? "
                     + "and mrId=?");
             pstmtThresholdUpdate.setString(1, latency_status);
             pstmtThresholdUpdate.setDouble(2, avg_responce);
             pstmtThresholdUpdate.setTimestamp(3, logDateTime);
-            pstmtThresholdUpdate.setString(4, clientRadioID);
-            pstmtThresholdUpdate.setString(5, mrId);
+            pstmtThresholdUpdate.setTimestamp(4, latency_status.equalsIgnoreCase("High") ? logDateTime : null);
+            pstmtThresholdUpdate.setTimestamp(5, latency_status.equalsIgnoreCase("Low") ? logDateTime : null);
+            pstmtThresholdUpdate.setString(6, clientRadioID);
+            pstmtThresholdUpdate.setString(7, mrId);
             pstmtThresholdUpdate.executeUpdate();
         } catch (Exception e) {
             System.out.println("insert latency alert exception normal:" + e);
@@ -517,13 +520,16 @@ public class DatabaseHelper {
         PreparedStatement pstmtThresholdUpdate = null;
         try {
             threshold_update_con = Datasource.getConnection();
-            pstmtThresholdUpdate = threshold_update_con.prepareStatement("UPDATE mars_radio_health_monitoring SET Noise_level_status=?,noiseLevel=?,eventTimestamp=? WHERE clientRadioId=? "
+            pstmtThresholdUpdate = threshold_update_con.prepareStatement("UPDATE mars_radio_health_monitoring SET Noise_level_status=?,noiseLevel=?,eventTimestamp=?,"
+                    + "Noise_level_Generated_Time=?,Noise_level_Cleared_Time=? WHERE clientRadioId=? "
                     + "and mrId=?");
             pstmtThresholdUpdate.setString(1, latency_status);
             pstmtThresholdUpdate.setDouble(2, avg_responce);
             pstmtThresholdUpdate.setTimestamp(3, logDateTime);
-            pstmtThresholdUpdate.setString(4, clientRadioID);
-            pstmtThresholdUpdate.setString(5, mrId);
+            pstmtThresholdUpdate.setTimestamp(4, latency_status.equalsIgnoreCase("High") ? logDateTime : null);
+            pstmtThresholdUpdate.setTimestamp(5, latency_status.equalsIgnoreCase("Low") ? logDateTime : null);
+            pstmtThresholdUpdate.setString(6, clientRadioID);
+            pstmtThresholdUpdate.setString(7, mrId);
             pstmtThresholdUpdate.executeUpdate();
         } catch (Exception e) {
             System.out.println("insert latency alert exception normal:" + e);
@@ -591,13 +597,16 @@ public class DatabaseHelper {
         PreparedStatement pstmtThresholdUpdate = null;
         try {
             threshold_update_con = Datasource.getConnection();
-            pstmtThresholdUpdate = threshold_update_con.prepareStatement("UPDATE mars_radio_health_monitoring SET Power_supply_voltage_status=?,powerSupply=?,eventTimestamp=? WHERE clientRadioId=? "
+            pstmtThresholdUpdate = threshold_update_con.prepareStatement("UPDATE mars_radio_health_monitoring SET Power_supply_voltage_status=?,powerSupply=?,eventTimestamp=?,"
+                    + "Power_supply_voltage_Generated_Time=?,Power_supply_voltage_Cleared_Time=? WHERE clientRadioId=? "
                     + "and mrId=?");
             pstmtThresholdUpdate.setString(1, latency_status);
             pstmtThresholdUpdate.setDouble(2, avg_responce);
             pstmtThresholdUpdate.setTimestamp(3, logDateTime);
-            pstmtThresholdUpdate.setString(4, clientRadioID);
-            pstmtThresholdUpdate.setString(5, mrId);
+            pstmtThresholdUpdate.setTimestamp(4, latency_status.equalsIgnoreCase("High") ? logDateTime : null);
+            pstmtThresholdUpdate.setTimestamp(5, latency_status.equalsIgnoreCase("Low") ? logDateTime : null);
+            pstmtThresholdUpdate.setString(6, clientRadioID);
+            pstmtThresholdUpdate.setString(7, mrId);
             pstmtThresholdUpdate.executeUpdate();
         } catch (Exception e) {
             System.out.println("insert latency alert exception normal:" + e);
@@ -665,13 +674,15 @@ public class DatabaseHelper {
         PreparedStatement pstmtThresholdUpdate = null;
         try {
             threshold_update_con = Datasource.getConnection();
-            pstmtThresholdUpdate = threshold_update_con.prepareStatement("UPDATE mars_radio_health_monitoring SET Received_Signal_status=?,receivedSignal=?,eventTimestamp=? WHERE clientRadioId=? "
+            pstmtThresholdUpdate = threshold_update_con.prepareStatement("UPDATE mars_radio_health_monitoring SET Received_Signal_status=?,receivedSignal=?,eventTimestamp=?,Received_Signal_Generated_Time=?,Received_Signal_Cleared_Time=? WHERE clientRadioId=? "
                     + "and mrId=?");
             pstmtThresholdUpdate.setString(1, latency_status);
             pstmtThresholdUpdate.setDouble(2, avg_responce);
             pstmtThresholdUpdate.setTimestamp(3, logDateTime);
-            pstmtThresholdUpdate.setString(4, clientRadioID);
-            pstmtThresholdUpdate.setString(5, mrId);
+            pstmtThresholdUpdate.setTimestamp(4, latency_status.equalsIgnoreCase("High") ? logDateTime : null);
+            pstmtThresholdUpdate.setTimestamp(5, latency_status.equalsIgnoreCase("Low") ? logDateTime : null);
+            pstmtThresholdUpdate.setString(6, clientRadioID);
+            pstmtThresholdUpdate.setString(7, mrId);
             pstmtThresholdUpdate.executeUpdate();
         } catch (Exception e) {
             System.out.println("insert latency alert exception normal:" + e);
@@ -739,13 +750,15 @@ public class DatabaseHelper {
         PreparedStatement pstmtThresholdUpdate = null;
         try {
             threshold_update_con = Datasource.getConnection();
-            pstmtThresholdUpdate = threshold_update_con.prepareStatement("UPDATE mars_radio_health_monitoring SET Tx_Power_measurement_status=?,txPowerMeasurement=?,eventTimestamp=? WHERE clientRadioId=? "
+            pstmtThresholdUpdate = threshold_update_con.prepareStatement("UPDATE mars_radio_health_monitoring SET Tx_Power_measurement_status=?,txPowerMeasurement=?,eventTimestamp=?,Tx_Power_Generated_Time=?,Tx_Power_Cleared_Time=? WHERE clientRadioId=? "
                     + "and mrId=?");
             pstmtThresholdUpdate.setString(1, latency_status);
             pstmtThresholdUpdate.setDouble(2, avg_responce);
             pstmtThresholdUpdate.setTimestamp(3, logDateTime);
-            pstmtThresholdUpdate.setString(4, clientRadioID);
-            pstmtThresholdUpdate.setString(5, mrId);
+            pstmtThresholdUpdate.setTimestamp(4, latency_status.equalsIgnoreCase("High") ? logDateTime : null);
+            pstmtThresholdUpdate.setTimestamp(5, latency_status.equalsIgnoreCase("Low") ? logDateTime : null);
+            pstmtThresholdUpdate.setString(6, clientRadioID);
+            pstmtThresholdUpdate.setString(7, mrId);
             pstmtThresholdUpdate.executeUpdate();
         } catch (Exception e) {
             System.out.println("insert latency alert exception normal:" + e);

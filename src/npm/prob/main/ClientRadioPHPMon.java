@@ -482,12 +482,15 @@ public class ClientRadioPHPMon implements Runnable {
         PreparedStatement pst = null;
         try {
             con = Datasource.getConnection();
-            pst = con.prepareStatement("UPDATE mars_radio_health_monitoring SET clientRadioStatus=?, eventTimestamp=? WHERE clientRadioId=? "
+            pst = con.prepareStatement("UPDATE mars_radio_health_monitoring SET clientRadioStatus=?, eventTimestamp=?, clientRadioStatus_Generated_Time=?, "
+                    + "clientRadioStatus_Cleared_Time=? WHERE clientRadioId=? "
                     + "and mrId=?");
             pst.setString(1, device_status);
             pst.setTimestamp(2, eventTime);
-            pst.setString(3, device_ip.split("_")[1]);
-            pst.setString(4, device_ip.split("_")[0]);
+            pst.setTimestamp(3, device_status.equalsIgnoreCase("Down") ? eventTime : null);
+            pst.setTimestamp(4, device_status.equalsIgnoreCase("Up") ? eventTime : null);
+            pst.setString(5, device_ip.split("_")[1]);
+            pst.setString(6, device_ip.split("_")[0]);
 
             pst.executeUpdate();
         } catch (Exception e) {
