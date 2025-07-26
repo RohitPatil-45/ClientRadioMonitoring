@@ -62,7 +62,7 @@ public class DatabaseHelper {
                     + "JOIN netadmin.monitoring_service ON servicehvid = hvid \n"
                     + "LEFT JOIN netadmin.platser ON plid = hvplid \n"
                     + "WHERE hvfab IN ('9','23') \n"
-                    + "AND servicetypeid IN ('13', '27', '57') AND hvnamn In('R2121')";
+                    + "AND servicetypeid IN ('13', '27', '57') AND hvnamn In('R2121','R2459','R2941')";
             // + " AND plnamn='canaris'";
 
             rs = st1.executeQuery(query);

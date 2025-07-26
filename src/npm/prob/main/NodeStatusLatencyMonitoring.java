@@ -108,8 +108,8 @@ public class NodeStatusLatencyMonitoring implements Runnable {
 
             xmlcon = Datasource.getConnection();
 
-                String SQL = "select clientRadioId,mrId,clientRadioName,Internal_temperature_status,Noise_level_status,Power_supply_voltage_status,Received_Signal_status,"
-                        + "Tx_Power_measurement_status,clientRadioStatus from mars_radio_health_monitoring where clientRadioName = 'R2121'";
+            String SQL = "select clientRadioId,mrId,clientRadioName,Internal_temperature_status,Noise_level_status,Power_supply_voltage_status,Received_Signal_status,"
+                    + "Tx_Power_measurement_status,clientRadioStatus from mars_radio_health_monitoring where clientRadioName in ('R2121','R2459','R2941')";
             Statement customerRS = xmlcon.createStatement();
             ResultSet xmlrs = customerRS.executeQuery(SQL);
             while (xmlrs.next()) {
@@ -125,6 +125,12 @@ public class NodeStatusLatencyMonitoring implements Runnable {
                 clientRadioStatusMap.put(deviceID, xmlrs.getString(9));
                 //To DO:Rohit  : All threshold status and clientradiostatus
             }
+            System.out.println("noiseThresholdMap = " + noiseThresholdMap);
+            System.out.println("temperatureThresholdMap = " + temperatureThresholdMap);
+            System.out.println("rssiThresholdMap = " + rssiThresholdMap);
+            System.out.println("txPowerThresholdMap = " + txPowerThresholdMap);
+            System.out.println("powerSupplyThresholdMap = " + powerSupplyThresholdMap);
+            System.out.println("clientRadioStatusMap = " + clientRadioStatusMap);
 
         } catch (Exception ex) {
             //System.out.println("create error " + ex);
@@ -193,6 +199,7 @@ public class NodeStatusLatencyMonitoring implements Runnable {
                 worker = null;
                 worker = new ClientRadioPHPMon(clientradiomodel);
                 executor.execute(worker);
+                Thread.sleep(3000);
 
             } catch (Exception e) {
                 System.err.println("Exceptionn: " + e.getMessage());

@@ -41,6 +41,7 @@ public class ClientRadioPHPMon implements Runnable {
 
             String cient_radio_id = radio.getHvnamn2();
             String deviceID = radio.getHvmanagementadr() + "_" + radio.getHvnamn2();
+            System.out.println("Device Id ==== "+deviceID);
             String deviceName = radio.getHvnamn();
             String hvid = radio.getHvid();
             String isAffected = "0";
