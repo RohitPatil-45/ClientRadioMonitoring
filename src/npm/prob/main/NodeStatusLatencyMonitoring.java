@@ -109,7 +109,7 @@ public class NodeStatusLatencyMonitoring implements Runnable {
             xmlcon = Datasource.getConnection();
 
                 String SQL = "select clientRadioId,mrId,clientRadioName,Internal_temperature_status,Noise_level_status,Power_supply_voltage_status,Received_Signal_status,"
-                        + "Tx_Power_measurement_status,clientRadioStatus from mars_radio_health_monitoring";
+                        + "Tx_Power_measurement_status,clientRadioStatus from mars_radio_health_monitoring where clientRadioName = 'R2121'";
             Statement customerRS = xmlcon.createStatement();
             ResultSet xmlrs = customerRS.executeQuery(SQL);
             while (xmlrs.next()) {

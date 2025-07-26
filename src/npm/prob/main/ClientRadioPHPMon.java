@@ -51,7 +51,7 @@ public class ClientRadioPHPMon implements Runnable {
             ProcessBuilder builder = null;
 
             if (simulation) {
-                builder = new ProcessBuilder("php", "C:Simulation\\ClientRadioMonitoring.php", radio.getHvmanagementadr(),
+                builder = new ProcessBuilder("php", "C:Simulation\\ClientRadio\\"+deviceName+".php", radio.getHvmanagementadr(),
                         radio.getHvnamn2());
             } else {
                 builder = new ProcessBuilder("php", "C:Canaris\\ClientRadio\\ClientRadioMonitoring.php", radio.getHvmanagementadr(),
