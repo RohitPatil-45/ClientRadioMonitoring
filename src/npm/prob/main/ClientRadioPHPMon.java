@@ -5,6 +5,7 @@
  */
 package npm.prob.main;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -16,7 +17,13 @@ import java.util.logging.Logger;
 import npm.prob.dao.DatabaseHelper;
 import npm.prob.datasource.Datasource;
 import npm.prob.model.ClientRadioModel;
+import npm.prob.model.EventLog;
 import npm.prob.model.MarsRadioHealthHistoryModel;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.json.JSONObject;
 
 /**
@@ -30,6 +37,11 @@ public class ClientRadioPHPMon implements Runnable {
     boolean simulation = true;
     String deviceType = "CLIENT_RADIO";
 
+    private static final int MAX_RETRIES = 3;
+    private static final int RETRY_DELAY_MS = 2000;
+
+    private final ObjectMapper mapper = new ObjectMapper();
+
     ClientRadioPHPMon(ClientRadioModel m) {
         this.radio = m;
     }
@@ -41,7 +53,7 @@ public class ClientRadioPHPMon implements Runnable {
 
             String cient_radio_id = radio.getHvnamn2();
             String deviceID = radio.getHvmanagementadr() + "_" + radio.getHvnamn2();
-            System.out.println("Device Id ==== "+deviceID);
+            System.out.println("Device Id ==== " + deviceID);
             String deviceName = radio.getHvnamn();
             String hvid = radio.getHvid();
             String isAffected = "0";
@@ -52,7 +64,7 @@ public class ClientRadioPHPMon implements Runnable {
             ProcessBuilder builder = null;
 
             if (simulation) {
-                builder = new ProcessBuilder("php", "C:Simulation\\ClientRadio\\"+deviceName+".php", radio.getHvmanagementadr(),
+                builder = new ProcessBuilder("php", "C:Simulation\\ClientRadio\\" + deviceName + ".php", radio.getHvmanagementadr(),
                         radio.getHvnamn2());
             } else {
                 builder = new ProcessBuilder("php", "C:Canaris\\ClientRadio\\ClientRadioMonitoring.php", radio.getHvmanagementadr(),
@@ -174,7 +186,8 @@ public class ClientRadioPHPMon implements Runnable {
                             netadminMsg = netadminMsg = deviceName + " is Down";;
                             isAffected = "1";
                             serviceId = "client_radio_status";
-                            db.insertIntoEventLog(deviceID, deviceName, eventMsg1, 4, "ClientRadio Status", event_time, netadminMsg, isAffected, problem, serviceId, deviceType);
+                            // db.insertIntoEventLog(deviceID, deviceName, eventMsg1, 4, "ClientRadio Status", event_time, netadminMsg, isAffected, problem, serviceId, deviceType);
+                            sendEventLogToApi(deviceID, deviceName, eventMsg1, 4, "ClientRadio Status", event_time, netadminMsg, isAffected, problem, serviceId, deviceType, 0);
 
                         } else if (router_status_xml.equalsIgnoreCase("Down3") && router_status.equalsIgnoreCase("Down")) {
                             //    //System.out.println("%%%%%..Skip Down condition ");
@@ -189,7 +202,8 @@ public class ClientRadioPHPMon implements Runnable {
                             isAffected = "0";
                             problem = "Cleared";
                             serviceId = "client_radio_status";
-                            db.insertIntoEventLog(deviceID, deviceName, eventMsg1, 0, "ClientRadio Status", event_time, netadminMsg, isAffected, problem, serviceId, deviceType);
+                            //db.insertIntoEventLog(deviceID, deviceName, eventMsg1, 0, "ClientRadio Status", event_time, netadminMsg, isAffected, problem, serviceId, deviceType);
+                            sendEventLogToApi(deviceID, deviceName, eventMsg1, 0, "ClientRadio Status", event_time, netadminMsg, isAffected, problem, serviceId, deviceType, 0);
                             try {
                                 StatusChangeDiff t22 = null;
                                 t22 = new StatusChangeDiff();
@@ -221,8 +235,8 @@ public class ClientRadioPHPMon implements Runnable {
                             isAffected = "0";
                             problem = "Cleared";
                             serviceId = "client_radio_status";
-                            db.insertIntoEventLog(deviceID, deviceName, eventMsg1, 0, "ClientRadio Status", event_time, netadminMsg, isAffected, problem, serviceId, deviceType);
-
+//                            db.insertIntoEventLog(deviceID, deviceName, eventMsg1, 0, "ClientRadio Status", event_time, netadminMsg, isAffected, problem, serviceId, deviceType);
+                            sendEventLogToApi(deviceID, deviceName, eventMsg1, 0, "ClientRadio Status", event_time, netadminMsg, isAffected, problem, serviceId, deviceType, 0);
                             try {
                                 StatusChangeDiff t22 = null;
                                 t22 = new StatusChangeDiff();
@@ -284,7 +298,8 @@ public class ClientRadioPHPMon implements Runnable {
                 isAffected = "1";
                 problem = "problem";
 
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "internaltemperature", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+                //db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "internaltemperature", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+                sendEventLogToApi(deviceID, deviceName, eventMsg, 4, "internaltemperature", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType, 0);
                 db.updateMonitoringInstanceStatus(hvid, "internaltemperature", 5);
 //                db.updateMarsThresholdStatus(deviceID, "High");// Update Thrshold Status = need understanding
 
@@ -298,7 +313,8 @@ public class ClientRadioPHPMon implements Runnable {
                 netadmin_msg = "Satel Combined online diagnostics polling: internaltemperature = " + actual_value;
                 isAffected = "0";
                 problem = "Cleared";
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "internaltemperature", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+                //db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "internaltemperature", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+                sendEventLogToApi(deviceID, deviceName, eventMsg, 0, "internaltemperature", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType, 0);
             }
         } catch (Exception e4) {
             System.out.println(" Internal Temperature Threshold:" + e4);
@@ -327,7 +343,8 @@ public class ClientRadioPHPMon implements Runnable {
                 isAffected = "1";
                 problem = "problem";
 
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "noiselevel", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+//                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "noiselevel", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+                sendEventLogToApi(deviceID, deviceName, eventMsg, 4, "noiselevel", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType, 0);
 //                db.updateMarsThresholdStatus(deviceID, "High");// Update Thrshold Status
 
             } else if (actual_value < threshold && h_latencystatus.equalsIgnoreCase("High")) {
@@ -341,7 +358,8 @@ public class ClientRadioPHPMon implements Runnable {
                 isAffected = "0";
                 problem = "Cleared";
 
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "noiselevel", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType);
+//                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "noiselevel", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType);
+                sendEventLogToApi(deviceID, deviceName, eventMsg, 0, "noiselevel", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType, 0);
             }
         } catch (Exception e4) {
             System.out.println(" Noise Level Threshold:" + e4);
@@ -370,7 +388,8 @@ public class ClientRadioPHPMon implements Runnable {
                 isAffected = "1";
                 problem = "problem";
 
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "powersupplyvoltage", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+//                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "powersupplyvoltage", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+                sendEventLogToApi(deviceID, deviceName, eventMsg, 4, "powersupplyvoltage", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType, 0);
 //                db.updateMarsThresholdStatus(deviceID, "High");// Update Thrshold Status
 
             } else if (actual_value < threshold && h_latencystatus.equalsIgnoreCase("High")) {
@@ -384,7 +403,8 @@ public class ClientRadioPHPMon implements Runnable {
                 isAffected = "0";
                 problem = "Cleared";
 
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "powersupplyvoltage", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType);
+//                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "powersupplyvoltage", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType);
+                sendEventLogToApi(deviceID, deviceName, eventMsg, 0, "powersupplyvoltage", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType, 0);
             }
         } catch (Exception e4) {
             System.out.println(" Power Supply Threshold:" + e4);
@@ -414,7 +434,8 @@ public class ClientRadioPHPMon implements Runnable {
                 isAffected = "1";
                 problem = "problem";
 
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "rssi", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+//                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "rssi", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+                sendEventLogToApi(deviceID, deviceName, eventMsg, 4, "rssi", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType, 0);
 //                db.updateMarsThresholdStatus(deviceID, "High");// Update Thrshold Status
 
             } else if (actual_value < threshold && h_latencystatus.equalsIgnoreCase("High")) {
@@ -427,7 +448,8 @@ public class ClientRadioPHPMon implements Runnable {
                 netadmin_msg = "Satel Combined online diagnostics polling: rssi = " + actual_value;
                 isAffected = "0";
                 problem = "Cleared";
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "rssi", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+//                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "rssi", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+                sendEventLogToApi(deviceID, deviceName, eventMsg, 0, "rssi", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType, 0);
 
             }
         } catch (Exception e4) {
@@ -457,7 +479,8 @@ public class ClientRadioPHPMon implements Runnable {
                 isAffected = "1";
                 problem = "problem";
 
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "txpower", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+//                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 4, "txpower", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+                sendEventLogToApi(deviceID, deviceName, eventMsg, 4, "txpower", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType, 0);
 //                db.updateMarsThresholdStatus(deviceID, "High");// Update Thrshold Status
 
             } else if (actual_value < threshold && h_latencystatus.equalsIgnoreCase("High")) {
@@ -471,7 +494,8 @@ public class ClientRadioPHPMon implements Runnable {
                 problem = "Cleared";
                 eventMsg = "Tx Power Threshold:Low" + actual_value + " Tx Power threshold value=" + threshold + " Tx Power status=" + "Low" + " Device Name=" + deviceName;
                 netadmin_msg = "Satel Combined online diagnostics polling: txpower = " + actual_value;
-                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "txpower", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+//                db.insertIntoEventLog(deviceID, deviceName, eventMsg, 0, "txpower", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType); //Evrnt log
+                sendEventLogToApi(deviceID, deviceName, eventMsg, 0, "txpower", logDateTime, netadmin_msg, isAffected, problem, serviceId, deviceType, 0);
             }
         } catch (Exception e4) {
             System.out.println(" Tx Power Threshold:" + e4);
@@ -565,6 +589,87 @@ public class ClientRadioPHPMon implements Runnable {
             } catch (Exception exp) {
                 System.out.println("update hv log exp:" + exp);
             }
+        }
+    }
+
+    public void sendEventLogToApi(String deviceID, String deviceName, String eventMsg, int severity, String serviceName, Timestamp evenTimestamp,
+            String netadmin_msg, String isAffected, String problem, String serviceId, String deviceType, int attempt) {
+        EventLog log = new EventLog();
+        log.setDeviceId(deviceID);
+        log.setDeviceName(deviceName);
+        log.setEventMsg(eventMsg);
+        log.setSeverity(String.valueOf(severity));
+        log.setServiceName(serviceName);
+        log.setEventTimestamp(evenTimestamp);
+        log.setNetadminMsg(netadmin_msg);
+        log.setIsaffected(Integer.valueOf(isAffected));
+        log.setProblemClear(problem);
+        log.setServiceID(serviceId);
+        log.setDeviceType(deviceType);
+
+        System.out.println("service id = " + serviceId);
+        System.out.println("sAffected = " + isAffected);
+
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            String json = mapper.writeValueAsString(log);
+            HttpPost request = new HttpPost("http://localhost:8083/api/event/log"); // adjust host/port
+            request.setHeader("Content-Type", "application/json");
+            request.setEntity(new StringEntity(json));
+
+            CloseableHttpResponse response = httpClient.execute(request);
+            int statusCode = response.getStatusLine().getStatusCode();
+
+            if (statusCode >= 200 && statusCode < 300) {
+                System.out.println("Log sent successfully: " + statusCode);
+            } else {
+                System.err.println("Failed to send log, status: " + statusCode);
+                retryIfNeeded(log, attempt);
+            }
+
+            response.close();
+        } catch (IOException e) {
+            System.err.println("Exception while sending log: " + e.getMessage());
+            retryIfNeeded(log, attempt);
+        } finally {
+            try {
+                httpClient.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    private void retryIfNeeded(EventLog log, int attempt) {
+        if (attempt < MAX_RETRIES) {
+            System.out.println("Retrying sendEventLogToApi... Attempt " + (attempt + 1));
+            try {
+                Thread.sleep(RETRY_DELAY_MS);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt(); // Preserve interrupt status
+                return;
+            }
+
+            // Retry the API call with incremented attempt count
+            sendEventLogToApi(
+                    log.getDeviceId(),
+                    log.getDeviceName(),
+                    log.getEventMsg(),
+                    Integer.valueOf(log.getSeverity()),
+                    log.getServiceName(),
+                    log.getEventTimestamp(),
+                    log.getNetadminMsg(),
+                    log.getIsaffected().toString(),
+                    log.getProblemClear(),
+                    log.getServiceID(),
+                    log.getDeviceType(),
+                    attempt + 1
+            );
+        } else {
+            System.err.println("Max retries reached. Dropping event log.");
         }
     }
 }
